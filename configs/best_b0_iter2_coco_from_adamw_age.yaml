@@ -1,0 +1,66 @@
+
+experiment:
+  name: age_face_head_frozen_bn_coco_from_adamW
+  save_dir: tb_logs
+  seed: 777
+  gpu: [0]
+  accelerator: gpu
+  comment: ~
+
+  ckpt_callback:
+    save_top_k: 3
+    monitor: val_y_acc
+    mode: max
+  early_stop:
+    monitor: val_y_loss
+    mode: min
+    patience: 10
+
+
+training:
+  train_fc_only: true
+  max_epochs: 100
+  opt: Adam
+  lr: 0.0003
+  weight_decay: 0.00001
+  loss: ce_loss
+  batch_size: &bs 256
+  grad_acc: 1
+
+  scheduler:
+    name: ReduceLROnPlateau
+    monitor: 'val_y_loss'
+    mode: 'min'
+    patience: 3
+    factor: 0.1
+    min_lr: 0.00000001
+
+  # scheduler:
+  #   name: ExponentialLR
+  #   monitor: 'train/loss'
+  #   mode: 'min'
+  #   gamma: 0.94
+
+dataset:
+  fgvcx:
+    num_classes: 1
+    train_list: /data/tasks/versus_test_assingment/data/age_filtered_48_train.csv
+    val_list: /data/tasks/versus_test_assingment/data/age_filtered_48_val.csv
+    test_list: /data/tasks/versus_test_assingment/data/age_filtered_48_test.csv
+    root: /data/tasks/versus_test_assingment/data/TrainAge
+    ##crop_fraction: 1.0
+    crop_size: 96
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    num_workers: 4
+    batch_size: *bs
+
+model:
+  unfreeze_modules: ['classifier']
+  n_classes: &nc 3
+  target_labels: ['young', 'middle', 'old']
+  arch: tf_efficientnet_b0
+  ckpt: /data/tasks/versus_test_assingment/person_face_analysis/is_masked/tb_logs/age_face_head_frozen_bn_coco_from_adamW/version_10/checkpoints/epoch=55-val_acc=0.00-val_bce_loss=0.00.ckpt
+  dropout: 0.2
+  pretrained: true
+  
